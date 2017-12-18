@@ -1,6 +1,8 @@
 # thunar-nextcloud-plugin
 A plugin for sharing files via the Nextcloud client from within the Thunar file manager
 
+![Screenshot](https://github.com/frederikmoellers/thunar-nextcloud-plugin/raw/master/screenshot.png)
+
 ## What/why/how is this?
 I use Nextcloud extensively and I also use the XFCE desktop with the Thunar file manager. However, every time I wanted to share a folder/file with some other people, I had to log into the web interface. I wanted to be able to share files from within Thunar directly. So I wrote this plugin.
 
