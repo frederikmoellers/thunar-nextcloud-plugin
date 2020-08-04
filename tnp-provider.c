@@ -38,7 +38,7 @@
 static gboolean handle_responses(const char const* share_path);
 static void tnp_provider_menu_provider_init (ThunarxMenuProviderIface* iface);
 static void tnp_provider_finalize (GObject* object);
-static GList* tnp_provider_get_file_actions(ThunarxMenuProvider* menu_provider,
+static GList* tnp_provider_get_file_menu_items(ThunarxMenuProvider* menu_provider,
                                             GtkWidget* window,
                                             GList* files);
 static void tnp_provider_execute(TnpProvider* tnp_provider, GPid (*action) (const gchar* folder,
@@ -73,11 +73,11 @@ struct _TnpProvider
     gint            child_watch_id;
 };
 
-static GQuark tnp_action_files_quark;
+static GQuark tnp_item_files_quark;
 #if THUNARX_CHECK_VERSION(0,4,1)
-static GQuark tnp_action_folder_quark;
+static GQuark tnp_item_folder_quark;
 #endif
-static GQuark tnp_action_provider_quark;
+static GQuark tnp_item_provider_quark;
 
 THUNARX_DEFINE_TYPE_WITH_CODE(TnpProvider,
                               tnp_provider,
@@ -329,7 +329,7 @@ static gboolean handle_responses(const char const* share_path)
     return retval;
 }
 
-static void tnp_share_item(GtkAction* action, GtkWidget* window)
+static void tnp_share_item(ThunarxMenuItem *item, GtkWidget* window)
 {
     GList* files;
     gchar* path;
@@ -338,7 +338,7 @@ static void tnp_share_item(GtkAction* action, GtkWidget* window)
     GtkWidget *dialog;
 
     /* determine the files associated with the action */
-    files = g_object_get_qdata (G_OBJECT (action), tnp_action_files_quark);
+    files = g_object_get_qdata (G_OBJECT (item), tnp_item_files_quark);
     if (G_UNLIKELY (files == NULL || files->next != NULL))
     {
         return;
@@ -376,7 +376,7 @@ static void tnp_share_item(GtkAction* action, GtkWidget* window)
     }
 }
 
-static GList* tnp_provider_get_file_actions(ThunarxMenuProvider* menu_provider,
+static GList* tnp_provider_get_file_menu_items(ThunarxMenuProvider* menu_provider,
                                             GtkWidget* window,
                                             GList* files)
 {
@@ -389,9 +389,9 @@ static GList* tnp_provider_get_file_actions(ThunarxMenuProvider* menu_provider,
     gboolean is_synced = FALSE;
 
     TnpProvider* tnp_provider = TNP_PROVIDER (menu_provider);
-    GtkAction* action;
+    ThunarxMenuItem *item = NULL;
     GClosure* closure;
-    GList* actions = NULL;
+    GList* items = NULL;
 
     // we cannot share more than one item at a time
     if(files->next != NULL)
@@ -446,26 +446,25 @@ static GList* tnp_provider_get_file_actions(ThunarxMenuProvider* menu_provider,
         tooltip = tooltip_name_file;
     }
     // append the "Share" action
-    action = g_object_new (GTK_TYPE_ACTION,
-                           "name", "Tnp::extract-here",
-                           "label", _("Share via _Nextcloud"),
-#if !GTK_CHECK_VERSION(2,9,0)
-                           "stock-id", "Nextcloud",
-#else
-                           "icon-name", "Nextcloud",
-#endif
-                           "tooltip", tooltip,
-                           NULL);
-    g_object_set_qdata_full (G_OBJECT (action), tnp_action_files_quark,
+    item = thunarx_menu_item_new("Tnp::share",
+                                 _("Share via _Nextcloud"),
+                                 tooltip,
+                                 "Nextcloud");
+
+    g_object_set_qdata_full (G_OBJECT (item), tnp_item_files_quark, 
                              thunarx_file_info_list_copy (files),
                              (GDestroyNotify) thunarx_file_info_list_free);
-    g_object_set_qdata_full (G_OBJECT (action), tnp_action_provider_quark,
+
+    g_object_set_qdata_full (G_OBJECT (item), tnp_item_provider_quark,
                              g_object_ref (G_OBJECT (tnp_provider)),
                              (GDestroyNotify) g_object_unref);
+
     closure = g_cclosure_new_object (G_CALLBACK (tnp_share_item), G_OBJECT (window));
-    g_signal_connect_closure (G_OBJECT (action), "activate", closure, TRUE);
-    actions = g_list_append (actions, action);
-    return actions;
+
+    g_signal_connect_closure (G_OBJECT (item), "activate", closure, TRUE);
+
+    items = g_list_append (items, item);
+    return items;
 }
 
 
@@ -484,12 +483,12 @@ static void tnp_provider_class_init(TnpProviderClass* classname)
 {
     GObjectClass* gobject_class;
 
-    /* determine the "tnp-action-files", "tnp-action-folder" and "tnp-action-provider" quarks */
-    tnp_action_files_quark = g_quark_from_string("tnp-action-files");
+    /* determine the "tnp-item-files", "tnp-item-folder" and "tnp-item-provider" quarks */
+    tnp_item_files_quark = g_quark_from_string("tnp-item-files");
     #if THUNARX_CHECK_VERSION(0,4,1)
-    tnp_action_folder_quark = g_quark_from_string("tnp-action-folder");
+    tnp_item_folder_quark = g_quark_from_string("tnp-item-folder");
     #endif
-    tnp_action_provider_quark = g_quark_from_string("tnp-action-provider");
+    tnp_item_provider_quark = g_quark_from_string("tnp-item-provider");
 
     gobject_class = G_OBJECT_CLASS(classname);
     gobject_class->finalize = tnp_provider_finalize;
@@ -497,7 +496,7 @@ static void tnp_provider_class_init(TnpProviderClass* classname)
 
 static void tnp_provider_menu_provider_init(ThunarxMenuProviderIface* iface)
 {
-    iface->get_file_actions = tnp_provider_get_file_actions;
+    iface->get_file_menu_items = tnp_provider_get_file_menu_items;
 }
 
 static void tnp_provider_init(TnpProvider* tnp_provider)
