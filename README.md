@@ -7,7 +7,7 @@ A plugin for sharing files via the Nextcloud client from within the Thunar file 
 I use Nextcloud extensively and I also use the XFCE desktop with the Thunar file manager. However, every time I wanted to share a folder/file with some other people, I had to log into the web interface. I wanted to be able to share files from within Thunar directly. So I wrote this plugin.
 
 ## INSTALLING
-Run the script `compile.sh`. It should generate a file named `thunar-nextcloud-plugin.so`. As root, copy that file into `/usr/lib/x86_64-linux-gnu/thunarx-2/` (assuming you're running an amd64 Linux). Restart thunar (logging out and back in might be easiest if you don't know how to kill the background process).
+Run the script `compile.sh`. It should generate a file named `thunar-nextcloud-plugin.so`. As root, copy that file into `/usr/lib/x86_64-linux-gnu/thunarx-3/` (assuming you're running an amd64 Debian). Restart thunar (logging out and back in might be easiest if you don't know how to kill the background process).
 
 ## KNOWN BUGS
 In some cases, the internal state of the plugin might be inconsistent. This can happen if you remove a directory that was synced via Nextcloud without removing it from the client first.
